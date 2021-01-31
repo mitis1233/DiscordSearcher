@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget
 from PyQt5.QtCore import QFile, pyqtSignal, QThread, QSettings,Qt
 from UI_Main import Ui_MainWindow
 from UI_Login import Ui_Form
-from UI_RE import Ui_Form_RE
 
 class TutorialThread(QThread):
     def __init__(self):
@@ -21,13 +20,13 @@ class TutorialThread(QThread):
         self.window.ui.pushButton_2.setEnabled(False)
         self.window.ui.pushButton_4.setEnabled(True)
         self.Discord = DiscordRun()
-        DiscordRule=QSettings("DiscordRule.ini", QSettings.IniFormat)
-        self.Discord.header['authorization']=DiscordRule.value("LoginWindow/authorization")
-        self.Discord.header['cookie']=DiscordRule.value("LoginWindow/cookie")
-        self.Discord.header['user-agent']=DiscordRule.value("LoginWindow/user-agent")
-        self.Discord.header['x-super-properties']=DiscordRule.value("LoginWindow/x-super-properties")
+        header=LoginWindow().settings.value('header')
+        self.Discord.header['authorization']=header[0]
+        self.Discord.header['cookie']=header[1]
+        self.Discord.header['user-agent']=header[2]
+        self.Discord.header['x-super-properties']=header[3]
         print(self.Discord.header)
-        self.Discord.REWindowRuleTextEdit=DiscordRule.value("REWindow/rule")
+        self.Discord.ctrateDB()
         if self.window.fastmode==1:
             self.fastmode()
         else:
@@ -132,9 +131,6 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
-        self.Login_window = LoginWindow()
-        self.RE_window = REWindow()
-        
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon('D://DiscordSearcher//ico.ico'))
         self.ui.pushButton_4.setEnabled(False)
@@ -145,10 +141,10 @@ class MainWindow(QMainWindow):
         self.ui.checkBox.stateChanged.connect(self.checkBox)
         self.ui.pushButton.clicked.connect(self.pushButton_Click_URL)#Discord群組網址
         self.ui.pushButton_2.clicked.connect(self.pushButton_Click_Search)#開始搜尋
+        self.Login_window = LoginWindow()
         self.ui.pushButton_3.clicked.connect(self.Login_window.show)#登入設定
-        self.ui.pushButton_4.clicked.connect(self.pushButton_Click_Stop)#強制停止(搜尋)
-        self.ui.pushButton_5.clicked.connect(self.RE_window.show)#資料庫設定
-        
+        self.ui.pushButton_4.clicked.connect(self.pushButton_Click_Stop)#停止搜尋
+
     def PrintErr(self,ERR):
         self.ui.listWidget.addItem(str(ERR))
         
@@ -202,169 +198,6 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         QApplication.closeAllWindows()
 
-class REWindow(QWidget):
-    def __init__(self):
-        super(REWindow, self).__init__()
-        self.ui = Ui_Form_RE()
-        self.ui.setupUi(self)
-        self.setWindowIcon(QIcon('D://DiscordSearcher//ico.ico'))
-        self.ui.pushButton.clicked.connect(self.button_1)#等於or不等於
-        self.ui.pushButton_2.clicked.connect(self.button_2)#新增分類方式
-        self.ui.pushButton_3.clicked.connect(self.button_3)#建立資料表
-        self.ui.pushButton_4.clicked.connect(self.button_4)#開關刪除功能
-        self.ui.pushButton_5.clicked.connect(self.button_5)#刪除資料
-        self.ui.pushButton_6.clicked.connect(self.button_6)#刪除資料表
-        self.ui.pushButton_7.clicked.connect(self.button_7)#點擊開始測試
-        self.ui.pushButton_5.setEnabled(False)
-        self.ui.pushButton_6.setEnabled(False)
-        self.data_1=''#關鍵字
-        self.data_2='='#有這關鍵字or沒有這關鍵字
-        self.data_3=''#資料新增至哪個資料表
-        self.settings = QSettings("DiscordRule.ini", QSettings.IniFormat)
-        self.ui.textEdit.setText(self.settings.value("REWindow/rule"))
-        print(self.settings.value("REWindow/rule"))
-        self.listTable=[]
-        conn = sqlite3.connect('DiscordData.db')
-        Temp=conn.execute("select name from sqlite_master where type = 'table' order by name").fetchall()
-        conn.close()
-        for count in range(len(Temp)):
-            self.listTable.append(Temp[count][0])
-        try:
-            self.listTable.remove('sqlite_sequence')
-        except:
-            print('查無資料庫，初始化資料庫')
-            DiscordRun().ctrateDB()
-            conn = sqlite3.connect('DiscordData.db')
-            Temp=conn.execute("select name from sqlite_master where type = 'table' order by name").fetchall()
-            conn.close()
-            for count in range(len(Temp)):
-                self.listTable.append(Temp[count][0])
-            self.settings.setValue("REWindow/rule","r'http.+'，=，URL\nr'http.+'，≠，Chat")
-            self.ui.textEdit.setText(self.settings.value("REWindow/rule"))
-            self.listTable.remove('sqlite_sequence')
-        print(self.listTable)
-        self.ui.comboBox.addItems(self.listTable)
-        self.ui.comboBox_2.addItems(self.listTable)
-        
-    def TableSave(self,value):
-        value=[value]
-        self.ui.comboBox.addItems(value)
-        self.ui.comboBox_2.addItems(value)
-        
-    def button_1(self):
-        if self.ui.pushButton.text() == "=":
-            self.ui.pushButton.setText("≠")
-            self.data_2='≠'
-        else:
-            self.ui.pushButton.setText("=")
-            self.data_2='='
-            
-    def button_2(self):
-        lineEditTXT=self.ui.lineEdit.text()
-        if lineEditTXT == '':
-            self.settings.setValue("REWindow/rule",self.ui.textEdit.toPlainText())
-        else:
-            lineEditTXT2=lineEditTXT+'，'+self.data_2+'，'+self.ui.comboBox.currentText()
-            self.ui.textEdit.append(lineEditTXT2)
-            
-            textEditTXT=self.ui.textEdit.toPlainText()
-            print(textEditTXT)
-            self.settings.setValue("REWindow/rule",textEditTXT)
-            print(self.settings.value("REWindow/rule"))
-            self.ui.lineEdit.clear()
-        
-    def button_3(self):
-        lineEdit_2text=self.ui.lineEdit_2.text().strip()
-        if lineEdit_2text != '':
-            self.ui.lineEdit_2.clear()
-            try:
-                DBtext="""CREATE TABLE '"""+lineEdit_2text+"""' (
-                        "id"                INTEGER         NOT NULL,
-                        "timestamp"         timestamp,
-                        "content"           TEXT            UNIQUE,
-                        "title"             TEXT,
-                        "url"               TEXT,
-                        "attachmentsname"	TEXT,
-                        "attachmentsurl"	TEXT,
-                        "referer"           varchar(120),
-                        PRIMARY KEY("id" AUTOINCREMENT));
-                        """
-                print(DBtext)
-                conn = sqlite3.connect('DiscordData.db')
-                conn.execute(DBtext)
-                conn.close()
-                self.TableSave(lineEdit_2text)
-            except:
-                pass
-            
-    def button_4(self):
-        if self.ui.pushButton_4.text() == "🔒": #🔒 Locked🔓 Unlocked
-            self.ui.pushButton_4.setText("🔓")
-            self.ui.label_3.setText("Unlocked")
-            self.ui.pushButton_5.setEnabled(True)
-            self.ui.pushButton_6.setEnabled(True)
-        else:
-            self.ui.pushButton_4.setText("🔒")
-            self.ui.label_3.setText("Locked")
-            self.ui.pushButton_5.setEnabled(False)
-            self.ui.pushButton_6.setEnabled(False)
-            
-    def button_5(self):
-        DBtext="""delete FROM '"""+self.ui.comboBox_2.currentText()+"';"
-        try:
-            conn = sqlite3.connect('DiscordData.db', isolation_level=None)
-            conn.execute(DBtext)
-            conn.execute("""VACUUM;""")
-            conn.commit()
-            conn.close()
-        except:
-            print('Err_button_5')
-        
-    def button_6(self):
-        DBtext="""DROP TABLE '"""+self.ui.comboBox_2.currentText()+"';"
-        try:
-            conn = sqlite3.connect('DiscordData.db', isolation_level=None)
-            conn.execute(DBtext)
-            conn.execute("""VACUUM;""")
-            conn.commit()
-            conn.close()
-            self.ui.comboBox.removeItem(self.ui.comboBox_2.findText(self.ui.comboBox_2.currentText()))
-            self.ui.comboBox_2.removeItem(self.ui.comboBox_2.findText(self.ui.comboBox_2.currentText()))
-        except:
-            print('Err_button_6')
-            
-    def button_7(self):#測試自訂規則
-        lines=self.ui.textEdit.toPlainText().splitlines()#資料分行
-        for linescount in range(len(lines)):
-            line=lines[linescount].split("，")#行資料分類
-            data_1=line[0]#關鍵字
-            data_2=line[1]# = or ≠
-            data_3=line[2]#存到Table
-            textEdit_2=self.ui.textEdit_2.toPlainText()
-            if data_1[0:2]=="r'":#正則表達式
-                data_1=eval(data_1)    
-            if data_2 == "=":
-                if re.findall(re.compile(data_1, re.I), textEdit_2)!=[]:
-                    self.ui.textEdit_3.setText(data_3)
-                    break
-                else:
-                    self.ui.textEdit_3.setText('None')
-            else:#≠
-                if re.findall(re.compile(data_1, re.I), textEdit_2)==[]:
-                    self.ui.textEdit_3.setText(data_3)
-                    break
-                else:
-                    self.ui.textEdit_3.setText('None')
-            linescount+=1
-            
-    def closeEvent(self, event):
-        if self.ui.pushButton_4.text() != "🔒":
-            self.ui.pushButton_4.setText("🔒")
-            self.ui.label_3.setText("Locked")
-            self.ui.pushButton_5.setEnabled(False)
-            self.ui.pushButton_6.setEnabled(False)
-        
-
 class LoginWindow(QWidget):
     def __init__(self):
         super(LoginWindow, self).__init__()
@@ -372,18 +205,17 @@ class LoginWindow(QWidget):
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon('D://DiscordSearcher//ico.ico'))
         self.ui.pushButton.clicked.connect(self.set1)
-        self.settings = QSettings("DiscordRule.ini", QSettings.IniFormat)
-        self.ui.lineEdit.setText(self.settings.value("LoginWindow/authorization"))
-        self.ui.lineEdit_2.setText(self.settings.value('LoginWindow/cookie'))
-        self.ui.lineEdit_3.setText(self.settings.value('LoginWindow/user-agent'))
-        self.ui.lineEdit_4.setText(self.settings.value('LoginWindow/x-super-properties'))
+        self.settings = QSettings('header')
+        self.ui.lineEdit.setText(self.settings.value('header')[0])
+        self.ui.lineEdit_2.setText(self.settings.value('header')[1])
+        self.ui.lineEdit_3.setText(self.settings.value('header')[2])
+        self.ui.lineEdit_4.setText(self.settings.value('header')[3])
         
     def set1(self):
-        self.settings.setValue("LoginWindow/authorization",self.ui.lineEdit.text())
-        self.settings.setValue("LoginWindow/cookie",self.ui.lineEdit_2.text())
-        self.settings.setValue("LoginWindow/user-agent",self.ui.lineEdit_3.text())
-        self.settings.setValue("LoginWindow/x-super-properties",self.ui.lineEdit_4.text())
+        
+        self.settings.setValue('header', [self.ui.lineEdit.text().strip(), self.ui.lineEdit_2.text().strip(), self.ui.lineEdit_3.text().strip(),self.ui.lineEdit_4.text().strip()])
         self.close()
+        #print(self.settings.value('header'))
 
 
 class DiscordRun:
@@ -401,7 +233,6 @@ class DiscordRun:
                     'user-agent': '',
                     'x-super-properties': ''
                     }
-        self.REWindowRuleTextEdit=''
                     
     def searchLog(self):
         self.api='https://discord.com/api/v8/channels/'+re.compile(r'\d+$').findall(self.url)[0]+'/messages?limit=50'
@@ -490,39 +321,20 @@ class DiscordRun:
         count=0
         conn = sqlite3.connect('DiscordData.db')
         cursor=conn.cursor()
-        global window
-        for count in range(self.LogLen):#REWindow/rule
+        for count in range(self.LogLen):
             Temp=eval(self.Data[count])
             readData=Temp["content"]
-            lines=self.REWindowRuleTextEdit.splitlines()#資料分行
-            for linescount in range(len(lines)):
-                line=lines[linescount].split("，")#行資料分類
-                data_1=line[0]#關鍵字
-                data_2=line[1]# = or ≠
-                data_3=line[2]#存到Table
-                if data_1[0:2]=="r'":#正則表達式
-                    data_1=eval(data_1)    
-                if data_2 == "=":
-                    if re.findall(re.compile(data_1, re.I), readData)!=[]:
-                        command = "INSERT INTO '"+data_3+"'(timestamp, content, title, url, attachmentsname, attachmentsurl, referer)VALUES(?,?,?,?,?,?,?)"
-                        try:
-                            cursor.execute(command, (Temp["timestamp"], Temp["content"], Temp["title"], Temp["url"], Temp["attachmentsname"], Temp["attachmentsurl"], Temp["referer"]))
-                        except Exception as err:
-                            if re.compile(r'UNIQUE constraint failed:.+').findall(str(err)) ==[]:
-                                window.PrintErr(err)
-                                print(count,err)
-                        break
-                else:#≠
-                    if re.findall(re.compile(data_1, re.I), readData)==[]:
-                        command = "INSERT INTO '"+data_3+"'(timestamp, content, title, url, attachmentsname, attachmentsurl, referer)VALUES(?,?,?,?,?,?,?)"
-                        try:
-                            cursor.execute(command, (Temp["timestamp"], Temp["content"], Temp["title"], Temp["url"], Temp["attachmentsname"], Temp["attachmentsurl"], Temp["referer"]))
-                        except Exception as err:
-                            if re.compile(r'UNIQUE constraint failed:.+').findall(str(err)) ==[]:
-                                window.PrintErr(err)
-                                print(count,err)
-                        break
-                linescount+=1
+            if re.compile(r'[hH][tT][tT][pP]').findall(readData) !=[]: #有http進入
+                command = "INSERT INTO URL(timestamp, content, title, url, attachmentsname, attachmentsurl, referer)VALUES(?,?,?,?,?,?,?)"
+            else:
+                command = "INSERT INTO Chat(timestamp, content, title, url, attachmentsname, attachmentsurl, referer)VALUES(?,?,?,?,?,?,?)"
+            try:
+                cursor.execute(command, (Temp["timestamp"], Temp["content"], Temp["title"], Temp["url"], Temp["attachmentsname"], Temp["attachmentsurl"], Temp["referer"]))
+            except Exception as err:
+                if re.compile(r'UNIQUE constraint failed:.+').findall(str(err)) ==[]:
+                    global window
+                    window.PrintErr(err)
+                    print(count,err)
         conn.commit()
         conn.close()
     def ctrateDB(self):
