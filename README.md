@@ -1,0 +1,2 @@
+# DiscordSearcher
+把Discord頻道所有內容全部抓下來儲存
