@@ -39,9 +39,6 @@ class Ui_MainWindow(object):
         self.pushButton_3 = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
         self.pushButton_3.setObjectName("pushButton_3")
         self.horizontalLayout.addWidget(self.pushButton_3)
-        self.pushButton_5 = QtWidgets.QPushButton(self.verticalLayoutWidget_3)
-        self.pushButton_5.setObjectName("pushButton_5")
-        self.horizontalLayout.addWidget(self.pushButton_5)
         self.verticalLayout.addLayout(self.horizontalLayout)
         self.textEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget_3)
         self.textEdit.setObjectName("textEdit")
@@ -94,11 +91,10 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Discord Searcher"))
         self.lineEdit.setPlaceholderText(_translate("MainWindow", "Discord 群組網址"))
         self.pushButton.setText(_translate("MainWindow", "新增"))
         self.pushButton_3.setText(_translate("MainWindow", "登入設定"))
-        self.pushButton_5.setText(_translate("MainWindow", "資料庫設定"))
         self.checkBox.setText(_translate("MainWindow", "快速模式"))
         self.pushButton_2.setText(_translate("MainWindow", "開始搜尋"))
         self.pushButton_4.setText(_translate("MainWindow", "強制停止"))
